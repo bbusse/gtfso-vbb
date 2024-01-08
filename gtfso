@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+import configargparse
+from flask import Flask
+import json
+
+service_name = __name__
+wserver = Flask(service_name)
+
+
+@wserver.route("/")
+def hello():
+    return service_name
+
+@wserver.route("/success")
+def success():
+    return "Success!"
+
+# Readiness
+@wserver.route('/healthy')
+def healthy():
+    return "OK"
+
+
+# Liveness
+@wserver.route('/healthz')
+def healthz():
+    return probe_liveness()
+
+
+# Departures
+@wserver.route("/departures")
+def req_departures():
+    gtfso = Gtfso()
+    deps = gtfso.departures()
+    return deps
+
+
+class Gtfso:
+
+    def __init__(self):
+        self.deps = {"route_short_name": "",
+                     "trip_headsign": "",
+                     "departure_time": ""}
+
+    def departures(self):
+        data = self.deps
+        data["route_short_name"] = "S42"
+        data["trip_headsign"] = "42nd Street"
+        data["departure_time"] = "23:42"
+        json_data = json.dumps(data)
+        return json_data
+
+
+if __name__ == "__main__":
+
+    parser = configargparse.ArgParser(description="")
+    parser.add_argument('--debug',
+                        dest='debug',
+                        env_var='DEBUG',
+                        help="Show debug output",
+                        type=bool,
+                        default=False)
+    parser.add_argument('--fetch-interval',
+                        dest='fetch_interval',
+                        env_var='FETCH_INTERVAL',
+                        help="Hours between two consecutive data imports",
+                        type=int,
+                        default=24)
+    parser.add_argument('--listen-address',
+                        dest='listen_address',
+                        env_var='LISTEN_ADDRESS',
+                        help="The address to listen on",
+                        type=str,
+                        default="0.0.0.0")
+    parser.add_argument('--listen-port',
+                        dest='listen_port',
+                        env_var='LISTEN_PORT',
+                        help="The port to listen on",
+                        type=int,
+                        default=6001)
+
+    args = parser.parse_args()
+    debug = args.debug
+    listen_address = args.listen_address
+    listen_port = args.listen_port
+
+    if debug:
+        logging.info("Debug enabled")
+
+    # Start webserver
+    wserver.run(host=listen_address)
