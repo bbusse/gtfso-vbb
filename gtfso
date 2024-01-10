@@ -26,7 +26,6 @@ def healthy():
 def healthz():
     return probe_liveness()
 
-
 # Departures
 @wserver.route("/departures")
 def req_departures():
@@ -49,6 +48,10 @@ class Gtfso:
         data["departure_time"] = "23:42"
         json_data = json.dumps(data)
         return json_data
+
+# Liveness probe
+def probe_liveness():
+    return "OK"
 
 
 if __name__ == "__main__":
